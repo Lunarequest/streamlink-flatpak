@@ -1,0 +1,46 @@
+app-id: io.github.streamlink.streamlink-twitch-gui
+runtime: org.freedesktop.Platform
+runtime-version: '20.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '20.08'
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.node14
+command: start-github-desktop
+separate-locales: false
+finish-args:
+  - --share=ipc
+  - --socket=x11
+  - --socket=pulseaudio
+  - --share=network
+  - --device=dri
+  - --talk-name=org.freedesktop.Notifications
+modules:
+  - shared-modules/libappindicator/libappindicator-gtk3-12.10.json
+  - python3-streamlink.json
+  - name: yarn
+    buildsystem: simple
+    build-commands:
+      - 'cp -a * /app'
+    cleanup:
+      - '*'
+    sources:
+      - type: archive
+        url: https://github.com/yarnpkg/yarn/releases/download/v1.22.10/yarn-v1.22.10.tar.gz
+        sha256: 7e433d4a77e2c79e6a7ae4866782608a8e8bcad3ec6783580577c59538381a6e
+  - name: streamlink
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/node14/bin:/app/yarn/bin
+      env:
+        npm_config_nodedir: /usr/lib/sdk/node14
+    build-commands:
+      - 'HOME=$PWD yarn config --offline set yarn-offline-mirror $FLATPAK_BUILDER_BUILDDIR/flatpak-node/yarn-mirror'
+      - yarn install --offline
+      - yarn run grunt release --offline
+    sources:
+      - type: git
+        url: https://github.com/streamlink/streamlink-twitch-gui
+        tag: v1.12.0
+        commit: 130bfa1bafdf5d0563657b3d6c0b34ed5a464e69
+      - generated-sources.json
